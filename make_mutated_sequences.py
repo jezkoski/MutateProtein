@@ -55,13 +55,13 @@ def request_server(ext, session):
     if not r.ok:
       r.raise_for_status()
       return None
-    
+
     return r
 
 def set_connection():
     server = "http://grch37.rest.ensembl.org"
     session = sessions.BaseUrlSession(base_url = server)
-    
+
     retry_strategy = Retry(
         total=3,
         backoff_factor=2,
@@ -71,16 +71,17 @@ def set_connection():
 
     adapter = HTTPAdapter(max_retries=retry_strategy)
     session.mount('http://',adapter)
-    
+
     return session
 
 
 def get_protein_seq(ENST,session):
     ext = f"/sequence/id/{ENST}?type=protein"
-    
+
     p_seq = request_server(ext, session)
     ESP,seq = p_seq.text.split('\n',1)
     seq = seq.replace('\n','')
+    logging.info(f"Read protein sequence {ESP} for transcript {ENST}.")
     return(ESP,seq)
 
 def mutate_pseq(changes, ENSP, seq):
@@ -100,6 +101,7 @@ def mutate_pseq(changes, ENSP, seq):
             temp2 = temp[:k-1] + a_as[c[-3:]] + temp[k:]
             name_list.append(ENSP+"_"+c)
             seq_list.append(temp2)
+            logging.info(f"Mutated protein sequence with change {c}.")
         else:
             logging.info(f'Something wrong with {c}')
 
@@ -110,8 +112,8 @@ def save_seqs(nlist, slist, outname):
     with open(f"{outname}.fasta","w") as f:
         for i in range(len(slist)):
             f.write(nlist[i] + "\n" + slist[i] + "\n")
-            
-    logging.info("File saved.")
+
+    logging.info(f"File {outname}.fasta saved.")
 
 
 def mutations_in_another_isoform(data, ENSP_new, gene, session):
@@ -123,7 +125,7 @@ def mutations_in_another_isoform(data, ENSP_new, gene, session):
     for c in data['Protein_change']:
 
         ext = f"/variant_recoder/human/{gene}:{c}"
-        
+
         r = request_server(ext, session)
 
         test = r.text.split('\n')
@@ -136,10 +138,9 @@ def mutations_in_another_isoform(data, ENSP_new, gene, session):
             print(f"{c} not found in {ENSP_new}")
         else:
             new_changes.append(l)
-    
-    
+
     new_changes = pd.DataFrame(new_changes)
-    new_changes.columns = ['Protein_change']    
+    new_changes.columns = ['Protein_change']
     return(new_changes)
 
 
