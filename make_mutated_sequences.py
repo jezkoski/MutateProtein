@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 import pandas as pd
-import argparse
+import optparse
 import requests
 import sys
 import os
@@ -149,15 +149,15 @@ def main():
     logging.basicConfig(filename=f"Mutated_proteinseqs_{today}.log", level=logging.INFO, format='%(asctime)s :: %(levelname)s :: %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
     logging.info(f"------ Starting analysis {today} ----------")
 
-    parser = argparse.ArgumentParser(usage=usage, description=description)
+    parser = optparse.OptionParser(usage=usage, description=description)
     #parser.add_argument("-?", action="help", help=argparse.SUPPRESS_HELP, dest="help")
-    parser.add_argument("-i","--input", required = True,
+    parser.add_option("-i","--input", required = True,
                   help="The input file contains missense mutations in HGVSp format e.g. 'p.Ala36Thr'. Each mutation on separate line.", metavar="example/ex1.tsv")
-    parser.add_argument("-e","--enst", required = True,
+    parser.add_option("-e","--enst", required = True,
                   help="The ENST code of the gene isoform.")
 
 
-    args = parser.parse_args()
+    (options, args) = parser.parse_args()
 
     if len(sys.argv) == 1:
         parser.print_help()
@@ -165,13 +165,13 @@ def main():
         sys.exit()
 
     if args.input != None:
-        File = args.input
+        File = options.input
     else:
         logging.info("No input file")
         sys.exit()
 
 
-    ENST = args.enst
+    ENST = options.enst
     data = read_data(File)
     session = set_connection()
     ENSP, seq = get_protein_seq(ENST,session)
